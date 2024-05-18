@@ -3,11 +3,9 @@ import math
 import copy
 
 examples = list()
-x = list()
+x = list() #xi attributes
 values = dict() #values for each xi and y
-values_r = list()
 y = None
-subtrees = set()
 nodes = list()
 
 def read_csv(file):
@@ -39,8 +37,7 @@ class Leaf:
 class Node:
     def __init__(self, x, subtrees):
         self.x = x
-        self.subtrees = subtrees
-        
+        self.subtrees = subtrees         
         
 class ID3_Algorithm:
     def __init__(self):
@@ -72,9 +69,10 @@ class ID3_Algorithm:
         return entropy_value
         
 
-    def find_greatest_ig(self, D, values_r, start_entropy):
+    def find_greatest_ig(self, D, values_r):
         minimum = None
         max_arg = None
+        global nodes
         for attr in values_r.keys():
             try:
                 i = x.index(attr)
@@ -86,19 +84,23 @@ class ID3_Algorithm:
                 for a in D:
                     if a[i] == value:
                         D_reduced.append(a)
-               # D_reduced = {a for a in D if a[i] == value}
                 values_y = dict()
                 share = 0.0
+                last_value = None
                 for el in D_reduced: 
                     current_y = el[-1]
                     if current_y not in values_y:
                         values_y[current_y] = 0
                     values_y[current_y] += 1
+                    last_value = current_y
                     share += 1
                     
                 entropy = self.find_entropy(values_y.values())
-                share = share / len(D)
-                current_sum += share * entropy 
+                if entropy == 0:
+                    continue
+                else:
+                    share = share / len(D)
+                    current_sum += share * entropy 
             if minimum is None or current_sum < minimum:
                 minimum = current_sum
                 max_arg = attr
@@ -112,46 +114,46 @@ class ID3_Algorithm:
                 values_y[current_y] = 0
             values_y[current_y] += 1
         
-        v = 0
+        maximum = 0
+        most_frequent = None
         for value, count in values_y.items():
-            if count > v:
-                v = count
+            if count > maximum:
+                maximum = count
                 most_frequent = value
         return values_y, most_frequent
     
-    def search(self, D, Dp, features, y, values_r):
-        global nodes, subtrees
+    def search(self, D, Dp, features, values_r):
+        global nodes
         if len(D) == 0:
             _, v = self.most_common_y(Dp)
             return Leaf(v)
-        #Dp = {x for x in D if x[-1] == v}
         values_y, v = self.most_common_y(D)
         
-        if features is None or len(features) == 0: #or ovaj drugi uvjet
+        if features is None or len(features) == 0: #fali još jedan uvjet
             return Leaf(v)
-
-        start_entropy = self.find_entropy(values_y.values())
-        next_node, result_entropy = self.find_greatest_ig(D, values_r, start_entropy)
-        nodes.append(next_node) #the value with greatest information gain
-        if result_entropy == 0.0:
-            res = Leaf(D[0][-1])
-            print(res.decision)
-            return Leaf(D[0][-1])
-        #razdvajanje po varijabli next_node
-        for val in values[next_node]:
-            global x
-            position = x.index(next_node)
+        current_entropy = self.find_entropy(values_y.values())
+        if current_entropy == 0:
+            print(f"{v}")
+            return Leaf(v)
+        next_node, result_entropy = self.find_greatest_ig(D, values_r)
+        subtrees = dict()
+        copy_features = copy.deepcopy(features)
+        try:
+            index = copy_features.index(next_node)
+            del copy_features[index]
+        except:
+            pass
+        values_r_copy = copy.deepcopy(values_r)
+        del values_r_copy[next_node]
+        index = x.index(next_node)
+        for value in values[next_node]:
             D_child = list()
-            for a in D:
-                if a[position] == val:
-                    D_child.append(a)
-            index = features.index(next_node)
-            del features[index]
-            del values_r[next_node]
-            t = self.search(D_child, D, features, y, values_r)
-            #subtrees[].append(t)
-            #subtrees.append(subtrees, (v, t))
-        return Node(z, subtrees)
+            for el in D:
+                if el[index] == value:
+                    D_child.append(el)
+            t = self.search(D_child, D, copy_features, values_r_copy)
+            subtrees[value] = t
+        return subtrees
         
             
     def fit(self, training_set):
@@ -159,7 +161,7 @@ class ID3_Algorithm:
         define_values()
         features = copy.deepcopy(x)
         values_r = copy.deepcopy(values) 
-        self.search(examples, examples, features, y, values_r)
+        subtrees = self.search(examples, examples, features, values_r)
                 
     def predict(self, testing_set):
         read_csv(testing_set)
@@ -169,7 +171,9 @@ if __name__ == "__main__":
         ID3 = ID3_Algorithm()
         #training_dataset = sys.argv[1]
         #testing_dataset = sys.argv[2]
-        training_dataset = "data.csv"
+        training_dataset = "volleyball.csv"
         #testing_dataset = "test.csv"
+        print("[BRANCHES]:")
         ID3.fit(training_dataset)
+        print("[PREDICTIONS]:", end=" ")
         #ID3.predict(testing_dataset)
