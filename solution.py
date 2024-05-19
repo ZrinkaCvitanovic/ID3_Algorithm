@@ -1,17 +1,13 @@
-import sys
 import math
 import copy
 
 examples = list()
-x = list() #xi attributes
-values = dict() #values for each xi and y
+x = list()
+values = dict() 
 y = None
-nodes = list()
-subtrees = dict()
 
 def read_csv(file):
-    global x
-    global y
+    global x, y
     with open(file, "r") as data:
             for line in data:
                 line = line.strip().split(",")
@@ -20,6 +16,8 @@ def read_csv(file):
                     y = line[-1]
                 else:
                     examples.append(line)
+                    
+                    
 def define_values():
     for e in examples:
         for i in range (len(x) + 1):
@@ -31,27 +29,46 @@ def define_values():
             if current_attr not in values.keys():
                 values[current_attr] = set()
             values[current_attr].add(current_value)
+            
+            
+def build_tree(current_attr, current_subtrees, counter=1):
+    """if type(current_subtrees) is Node:
+        current_subtrees = current_subtrees.subtrees
+    if type(current_subtrees) is Leaf:
+        temp = current_subtrees
+        current_subtrees = list()
+        current_subtrees.append(temp)"""
+    for element in current_subtrees:
+        """if type(element) == Leaf:
+            print(f" {element.decision}") """
+        if type(element.subtrees) == Leaf:
+            print(f"{counter}:{current_attr}={element.x} {element.subtrees.decision}")
+        else:
+            if type(element.subtrees) is Node:
+                temp = element.subtrees
+                element.subtrees = list()
+                element.subtrees.append(temp)
+            for el in element.subtrees:
+                print(f"{counter}:{current_attr}={element.x}", end=" ")
+                #if type(el) is Node:
+                build_tree(el.x, el.subtrees, counter+1)
+                #else: 
+                #    build_tree(el.subtrees.x, el.subtrees.subtrees, counter+1)        
+
+
 class Leaf:
     def __init__(self, decision):
         self.decision = decision
-        
-    def print(self):
-        print(self.decision)
+
         
 class Node:
     def __init__(self, x, subtrees):
         self.x = x
         self.subtrees = subtrees  
-    
-    def print(self):
-        print(self.x)       
-        for el in subtrees:
-            if el.x is not None:
-                print(el.x, end= " ")
         
 class ID3_Algorithm:
-    def __init__(self):
-        nodes = list()
+    def __init__(self, limit=None):
+        self.limit = limit
 
 
     def find_entropy(self, values):
@@ -70,7 +87,6 @@ class ID3_Algorithm:
     def find_greatest_ig(self, D, values_r):
         minimum = None
         max_arg = None
-        global nodes
         for attr in values_r.keys():
             try:
                 i = x.index(attr)
@@ -120,19 +136,17 @@ class ID3_Algorithm:
                 most_frequent = value
         return values_y, most_frequent
     
-    def search(self, D, Dp, features, values_r, parent_node=None):
-        global subtrees
+    def search(self, D, Dp, features, values_r):
+        subtrees = list()
         if len(D) == 0:
             _, v = self.most_common_y(Dp)
-            return subtrees
+            return Leaf(v)
         values_y, v = self.most_common_y(D)
         if features is None or len(features) == 0: #fali još jedan uvjet
-            return subtrees
+            return Leaf(v)
         current_entropy = self.find_entropy(values_y.values())
         if current_entropy == 0:
-            if parent_node is not None:
-                subtrees[parent_node].append(v)
-            return subtrees
+            return Leaf(v)
         next_node = self.find_greatest_ig(D, values_r)
         copy_features = copy.deepcopy(features)
         index = copy_features.index(next_node)
@@ -141,23 +155,16 @@ class ID3_Algorithm:
         del values_r_copy[next_node]
         index = x.index(next_node)
         for value in values[next_node]:
-            keyname = next_node + "_" + value
-            if parent_node is None:
-                if keyname not in subtrees.keys():
-                    subtrees[keyname] = list()
-            else:
-                if parent_node not in subtrees.keys():
-                    subtrees[parent_node] = list()
-                subtrees[parent_node].append(keyname)
             D_child = list()
             for el in D:
                 if el[index] == value:
                     D_child.append(el)
-            if parent_node is None:
-                t = self.search(D_child, D, copy_features, values_r_copy, keyname)
-            else:
-                t = self.search(D_child, D, copy_features, values_r_copy, parent_node)
-        return subtrees
+            t = self.search(D_child, D, copy_features, values_r_copy)
+            temp = Node(value, t)
+            #temp.append(value)
+            #temp.append(t)
+            subtrees.append(temp)
+        return Node(next_node, subtrees)
         
             
     def fit(self, training_set):
@@ -165,39 +172,22 @@ class ID3_Algorithm:
         define_values()
         features = copy.deepcopy(x)
         values_r = copy.deepcopy(values) 
-        subtrees = self.search(examples, examples, features, values_r, None)
+        subtrees = self.search(examples, examples, features, values_r)
         return subtrees
                 
     def predict(self, testing_set):
         read_csv(testing_set)
         result = None 
+        
             
 if __name__ == "__main__":
         ID3 = ID3_Algorithm()
         #training_dataset = sys.argv[1]
         #testing_dataset = sys.argv[2]
-        training_dataset = "abcdef.csv"
+        training_dataset = "volleyball.csv"
         #testing_dataset = "test.csv"
         print("[BRANCHES]:")
-        subtrees = ID3.fit(training_dataset)
-        for tree in subtrees.keys():
-            attr, val = tree.split("_")
-            node = subtrees[tree]
-            counter = 1
-            term = True
-            for i in range(len(node)):
-                if term == True:
-                    counter = 1
-                    print(f"{counter}: {attr}={val}", end= " ")
-                n = node[i].split("_")
-                if len(n) == 1:
-                    print(f"{n[0]}")
-                    term = True
-                else:
-                    counter += 1
-                    print(f"{counter}:{n[0]}={n[1]}", end= " ")
-                    term = False
-                    
-                
+        node = ID3.fit(training_dataset)
+        build_tree(node.x, node.subtrees)
         print("[PREDICTIONS]:", end=" ")
         #ID3.predict(testing_dataset)
