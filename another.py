@@ -52,19 +52,7 @@ class Node:
 class ID3_Algorithm:
     def __init__(self):
         nodes = list()
-    
-    
-   #def IG(self, X):
-        # save all values of IG
-        # return maximum
-    
-    def argmax(self, given_set):
-        maximum = None
-        for unit in given_set:
-            if target == value:
-                if maximum is None or value > maximum:
-                    maximum = target
-        return maximum
+
 
     def find_entropy(self, values):
         entropy_value = 0.0
@@ -114,7 +102,7 @@ class ID3_Algorithm:
             if minimum is None or current_sum < minimum:
                 minimum = current_sum
                 max_arg = attr
-        return max_arg, minimum
+        return max_arg
     
     def most_common_y(self, D):
         values_y = dict()
@@ -132,52 +120,43 @@ class ID3_Algorithm:
                 most_frequent = value
         return values_y, most_frequent
     
-    def search(self, D, Dp, features, values_r, parent_node=None, parent_value=None):
-        global nodes
+    def search(self, D, Dp, features, values_r, parent_node=None):
+        global subtrees
         if len(D) == 0:
             _, v = self.most_common_y(Dp)
-            return Leaf(v)
+            return subtrees
         values_y, v = self.most_common_y(D)
-        
         if features is None or len(features) == 0: #fali još jedan uvjet
-            return Leaf(v)
+            return subtrees
         current_entropy = self.find_entropy(values_y.values())
         if current_entropy == 0:
-            print(f"{v}")
-            return Leaf(v)
-        next_node, result_entropy = self.find_greatest_ig(D, values_r)
-        nodes.append(next_node)
+            if parent_node is not None:
+                subtrees[parent_node].append(v)
+            return subtrees
+        next_node = self.find_greatest_ig(D, values_r)
         copy_features = copy.deepcopy(features)
-        try:
-            index = copy_features.index(next_node)
-            del copy_features[index]
-        except:
-            pass
+        index = copy_features.index(next_node)
+        del copy_features[index]
         values_r_copy = copy.deepcopy(values_r)
         del values_r_copy[next_node]
         index = x.index(next_node)
-        global subtrees
         for value in values[next_node]:
-            if next_node not in subtrees.keys():
-                    subtrees[next_node] = dict()
+            keyname = next_node + "_" + value
             if parent_node is None:
-                if value not in subtrees[next_node].keys():
-                    subtrees[next_node][value] = list()
+                if keyname not in subtrees.keys():
+                    subtrees[keyname] = list()
             else:
-                if parent_value not in subtrees[parent_node].keys():
-                    subtrees[parent_node][parent_value] = list()
+                if parent_node not in subtrees.keys():
+                    subtrees[parent_node] = list()
+                subtrees[parent_node].append(keyname)
             D_child = list()
             for el in D:
                 if el[index] == value:
                     D_child.append(el)
-            t = self.search(D_child, D, copy_features, values_r_copy, next_node, value)
-            temp = list()
-            if parent_node is not None:
-                target = subtrees[parent_node][parent_value]
-                if len(target) > 0:
-                    temp.append()
-            temp.append(t)
-            subtrees[next_node][value] = temp
+            if parent_node is None:
+                t = self.search(D_child, D, copy_features, values_r_copy, keyname)
+            else:
+                t = self.search(D_child, D, copy_features, values_r_copy, parent_node)
         return subtrees
         
             
@@ -186,7 +165,8 @@ class ID3_Algorithm:
         define_values()
         features = copy.deepcopy(x)
         values_r = copy.deepcopy(values) 
-        subtrees = self.search(examples, examples, features, values_r)
+        subtrees = self.search(examples, examples, features, values_r, None)
+        return subtrees
                 
     def predict(self, testing_set):
         read_csv(testing_set)
@@ -196,9 +176,28 @@ if __name__ == "__main__":
         ID3 = ID3_Algorithm()
         #training_dataset = sys.argv[1]
         #testing_dataset = sys.argv[2]
-        training_dataset = "volleyball.csv"
+        training_dataset = "abcdef.csv"
         #testing_dataset = "test.csv"
         print("[BRANCHES]:")
-        ID3.fit(training_dataset)
+        subtrees = ID3.fit(training_dataset)
+        for tree in subtrees.keys():
+            attr, val = tree.split("_")
+            node = subtrees[tree]
+            counter = 1
+            term = True
+            for i in range(len(node)):
+                if term == True:
+                    counter = 1
+                    print(f"{counter}: {attr}={val}", end= " ")
+                n = node[i].split("_")
+                if len(n) == 1:
+                    print(f"{n[0]}")
+                    term = True
+                else:
+                    counter += 1
+                    print(f"{counter}:{n[0]}={n[1]}", end= " ")
+                    term = False
+                    
+                
         print("[PREDICTIONS]:", end=" ")
         #ID3.predict(testing_dataset)
