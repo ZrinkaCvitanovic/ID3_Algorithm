@@ -31,18 +31,25 @@ def define_values():
             values[current_attr].add(current_value)
             
             
-def build_tree(current_attr, current_subtrees, counter=1):
-    for element in current_subtrees:
-        if type(element.subtrees) is Leaf or type(element.subtrees) is Node:
-            temp = element.subtrees
-            element.subtrees = list()
-            element.subtrees.append(temp)
-        for el in element.subtrees:
-            print(f"{counter}:{current_attr}={element.x}", end=" ")
-            if type(el) == Leaf:
-                print(f"{el.decision}")
+def build_tree(current_attr, subtrees, counter=1):
+    if type(subtrees) == list:
+        for i in range (len(subtrees) -1):
+            #current_attr = subtrees[0]
+            next_subtrees = subtrees[1]
+            if type(next_subtrees) == Leaf:
+                print(f"{next_subtrees.decision}")
             else:
-                build_tree(el.x, el.subtrees, counter+1)  
+                for j in range (len(next_subtrees)-1):
+                    print(f"{counter}:{current_attr}={subtrees[0]}", end=" ")
+                    if type(next_subtrees[j+1]) == list:
+                        counter += 1
+                        print(f"{counter}:{current_attr}={next_subtrees[j]}", end=" ")
+                        build_tree(current_attr, next_subtrees[j+1], counter+1)
+                    elif type(next_subtrees[j+1]) == Leaf:
+                        print(f"{next_subtrees[j+1].decision}")
+            i += 1
+            
+     
 
 class Leaf:
     def __init__(self, decision):
@@ -148,11 +155,11 @@ class ID3_Algorithm:
                 if el[index] == value:
                     D_child.append(el)
             t = self.search(D_child, D, copy_features, values_r_copy)
-            temp = Node(value, t)
-            #temp.append(value)
-            #temp.append(t)
-            subtrees.append(temp)
-        return Node(next_node, subtrees)
+            #temp = Node(value, t)
+            subtrees.append(value)
+            subtrees.append(t)
+            #subtrees.append(temp)
+        return [next_node, subtrees]
         
             
     def fit(self, training_set):
@@ -176,6 +183,7 @@ if __name__ == "__main__":
         #testing_dataset = "test.csv"
         print("[BRANCHES]:")
         node = ID3.fit(training_dataset)
-        build_tree(node.x, node.subtrees)
+        build_tree(node[0], node[1])
+        #build_tree_iterative(node)
         print("[PREDICTIONS]:", end=" ")
         #ID3.predict(testing_dataset)
