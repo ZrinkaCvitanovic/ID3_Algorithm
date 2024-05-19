@@ -32,29 +32,17 @@ def define_values():
             
             
 def build_tree(current_attr, current_subtrees, counter=1):
-    """if type(current_subtrees) is Node:
-        current_subtrees = current_subtrees.subtrees
-    if type(current_subtrees) is Leaf:
-        temp = current_subtrees
-        current_subtrees = list()
-        current_subtrees.append(temp)"""
     for element in current_subtrees:
-        """if type(element) == Leaf:
-            print(f" {element.decision}") """
-        if type(element.subtrees) == Leaf:
-            print(f"{counter}:{current_attr}={element.x} {element.subtrees.decision}")
-        else:
-            if type(element.subtrees) is Node:
-                temp = element.subtrees
-                element.subtrees = list()
-                element.subtrees.append(temp)
-            for el in element.subtrees:
-                print(f"{counter}:{current_attr}={element.x}", end=" ")
-                #if type(el) is Node:
-                build_tree(el.x, el.subtrees, counter+1)
-                #else: 
-                #    build_tree(el.subtrees.x, el.subtrees.subtrees, counter+1)        
-
+        if type(element.subtrees) is Leaf or type(element.subtrees) is Node:
+            temp = element.subtrees
+            element.subtrees = list()
+            element.subtrees.append(temp)
+        for el in element.subtrees:
+            print(f"{counter}:{current_attr}={element.x}", end=" ")
+            if type(el) == Leaf:
+                print(f"{el.decision}")
+            else:
+                build_tree(el.x, el.subtrees, counter+1)  
 
 class Leaf:
     def __init__(self, decision):
