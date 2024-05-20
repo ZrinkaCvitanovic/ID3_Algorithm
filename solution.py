@@ -31,23 +31,17 @@ def define_values():
             values[current_attr].add(current_value)
             
             
-def build_tree(current_attr, subtrees, counter=1):
-    if type(subtrees) == list:
-        for i in range (len(subtrees) -1):
-            #current_attr = subtrees[0]
-            next_subtrees = subtrees[1]
-            if type(next_subtrees) == Leaf:
-                print(f"{next_subtrees.decision}")
-            else:
-                for j in range (len(next_subtrees)-1):
-                    print(f"{counter}:{current_attr}={subtrees[0]}", end=" ")
-                    if type(next_subtrees[j+1]) == list:
-                        counter += 1
-                        print(f"{counter}:{current_attr}={next_subtrees[j]}", end=" ")
-                        build_tree(current_attr, next_subtrees[j+1], counter+1)
-                    elif type(next_subtrees[j+1]) == Leaf:
-                        print(f"{next_subtrees[j+1].decision}")
-            i += 1
+def print_subtree(data, prefix="", counter=1):
+  label = data[0]
+  for i in range(1, len(data), 2):
+    subtree = data[i]
+    if isinstance(subtree, list):
+        if (prefix.endswith("=")):
+            print_subtree(subtree, f"{prefix}{data[i-1]} ", counter+1)
+        else:
+            print_subtree(subtree, f"{prefix}{counter}:{data[i-1]}=", counter)
+    else:
+      print(f"{prefix}{label} {subtree}")
             
      
 
@@ -135,13 +129,13 @@ class ID3_Algorithm:
         subtrees = list()
         if len(D) == 0:
             _, v = self.most_common_y(Dp)
-            return Leaf(v)
+            return v
         values_y, v = self.most_common_y(D)
         if features is None or len(features) == 0: #fali još jedan uvjet
-            return Leaf(v)
+            return v
         current_entropy = self.find_entropy(values_y.values())
         if current_entropy == 0:
-            return Leaf(v)
+            return v
         next_node = self.find_greatest_ig(D, values_r)
         copy_features = copy.deepcopy(features)
         index = copy_features.index(next_node)
@@ -155,10 +149,8 @@ class ID3_Algorithm:
                 if el[index] == value:
                     D_child.append(el)
             t = self.search(D_child, D, copy_features, values_r_copy)
-            #temp = Node(value, t)
             subtrees.append(value)
             subtrees.append(t)
-            #subtrees.append(temp)
         return [next_node, subtrees]
         
             
@@ -183,7 +175,7 @@ if __name__ == "__main__":
         #testing_dataset = "test.csv"
         print("[BRANCHES]:")
         node = ID3.fit(training_dataset)
-        build_tree(node[0], node[1])
+        print_subtree(node)
         #build_tree_iterative(node)
         print("[PREDICTIONS]:", end=" ")
         #ID3.predict(testing_dataset)
