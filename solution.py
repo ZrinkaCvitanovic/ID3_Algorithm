@@ -3,16 +3,16 @@ import copy
 import sys
 
 examples = list()
+examples_test = list()
 predictions = list()
 x = list()
 values = dict() 
 y = None
 values_of_y = list()
 
-def read_csv(file):
+def read_csv(file, purpose="train"):
     global x, y
-    global examples
-    examples = list()
+    global examples, examples_test
     with open(file, "r") as data:
             for line in data:
                 line = line.strip().split(",")
@@ -20,7 +20,10 @@ def read_csv(file):
                     x = line[0:-1:] 
                     y = line[-1]
                 else:
-                    examples.append(line)
+                    if purpose == "train":
+                        examples.append(line)
+                    else:
+                        examples_test.append(line)
                     
                     
 def define_values():
@@ -186,27 +189,27 @@ class ID3_Algorithm:
             for v in values_of_y:
                 j = values_of_y.index(v)
                 matrix[i][j] = 0
-        read_csv(testing_set)
-        global examples
+        read_csv(testing_set, "test")
+        global examples_test
         accurate = 0.0
-        total = float(len(examples))-1
-        for example in examples[1::]:
+        total = float(len(examples_test))-1
+        for example in examples_test[1::]:
             self.find_prediction(node, example)
         for index in range (len(predictions)):
-            if predictions[index] == examples[index+1][-1]:
+            if predictions[index] == examples_test[index+1][-1]:
                 accurate += 1
             i = values_of_y.index(predictions[index])
-            j = values_of_y.index(examples[index+1][-1])
+            j = values_of_y.index(examples_test[index+1][-1])
             matrix[i][j] += 1            
         return accurate/total, matrix
         
                    
 if __name__ == "__main__":
         ID3 = ID3_Algorithm()
-        #training_dataset = sys.argv[1]
-        #testing_dataset = sys.argv[2]
-        training_dataset = "volleyball.csv"
-        testing_dataset = "volleyball_test.csv"
+        training_dataset = sys.argv[1]
+        testing_dataset = sys.argv[2]
+        #training_dataset = "heldout_unforseen_value_train.csv"
+        #testing_dataset = "heldout_unseen_test.csv"
         print("[BRANCHES]:")
         node = ID3.fit(training_dataset)
         print_subtree(node)
