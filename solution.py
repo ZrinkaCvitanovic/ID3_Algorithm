@@ -32,7 +32,7 @@ def define_values():
             
             
 def print_subtree(data, prefix="", counter=1):
-  label = data[0]
+  #label = data[0]
   for i in range(1, len(data), 2):
     subtree = data[i]
     if isinstance(subtree, list):
@@ -41,19 +41,8 @@ def print_subtree(data, prefix="", counter=1):
         else:
             print_subtree(subtree, f"{prefix}{counter}:{data[i-1]}=", counter)
     else:
-      print(f"{prefix}{label} {subtree}")
-            
-     
+      print(f"{prefix}{data[i-1]} {subtree}")            
 
-class Leaf:
-    def __init__(self, decision):
-        self.decision = decision
-
-        
-class Node:
-    def __init__(self, x, subtrees):
-        self.x = x
-        self.subtrees = subtrees  
         
 class ID3_Algorithm:
     def __init__(self, limit=None):
@@ -176,6 +165,5 @@ if __name__ == "__main__":
         print("[BRANCHES]:")
         node = ID3.fit(training_dataset)
         print_subtree(node)
-        #build_tree_iterative(node)
         print("[PREDICTIONS]:", end=" ")
         #ID3.predict(testing_dataset)
