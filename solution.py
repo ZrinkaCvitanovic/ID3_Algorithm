@@ -3,9 +3,11 @@ import copy
 import sys
 
 examples = list()
+predictions = list()
 x = list()
 values = dict() 
 y = None
+values_of_y = list()
 
 def read_csv(file):
     global x, y
@@ -27,6 +29,10 @@ def define_values():
             current_value = e[i]
             if i == len(x):
                 current_attr = y
+                try:
+                    index = values_of_y.index(e[i])
+                except:
+                    values_of_y.append(e[i])
             else:
                 current_attr = x[i]
             if current_attr not in values.keys():
@@ -122,7 +128,7 @@ class ID3_Algorithm:
             _, v = self.most_common_y(Dp)
             return v
         values_y, v = self.most_common_y(D)
-        if features is None or len(features) == 0: #fali još jedan uvjet
+        if features is None or len(features) == 0:
             return v
         current_entropy = self.find_entropy(values_y.values())
         if current_entropy == 0:
@@ -159,6 +165,7 @@ class ID3_Algorithm:
             current_index = x.index(current_label)
         except:
             print(f"{node}", end=" ")
+            predictions.append(node)
             return
         current_subtree = node[1]
         if isinstance(current_subtree, list):
@@ -167,23 +174,48 @@ class ID3_Algorithm:
                     self.find_prediction(current_subtree[i+1], example)
         else:
             print(f"{current_subtree}")
+        return
                 
     def predict(self, testing_set, node):
+        matrix = dict()
+        global values_of_y
+        values_of_y.sort()
+        for value in values_of_y:
+            i = values_of_y.index(value)
+            matrix[i] = dict()
+            for v in values_of_y:
+                j = values_of_y.index(v)
+                matrix[i][j] = 0
         read_csv(testing_set)
         global examples
+        accurate = 0.0
+        total = float(len(examples))-1
         for example in examples[1::]:
             self.find_prediction(node, example)
+        for index in range (len(predictions)):
+            if predictions[index] == examples[index+1][-1]:
+                accurate += 1
+            i = values_of_y.index(predictions[index])
+            j = values_of_y.index(examples[index+1][-1])
+            matrix[i][j] += 1            
+        return accurate/total, matrix
         
-        
-            
+                   
 if __name__ == "__main__":
         ID3 = ID3_Algorithm()
-        training_dataset = sys.argv[1]
-        testing_dataset = sys.argv[2]
-        #training_dataset = "heldout_logic_f2_train.csv"
-        #testing_dataset = "heldout_logic_f2_test.csv"
+        #training_dataset = sys.argv[1]
+        #testing_dataset = sys.argv[2]
+        training_dataset = "volleyball.csv"
+        testing_dataset = "volleyball_test.csv"
         print("[BRANCHES]:")
         node = ID3.fit(training_dataset)
         print_subtree(node)
         print("[PREDICTIONS]:", end=" ")
-        ID3.predict(testing_dataset, node)
+        accuracy, matrix = ID3.predict(testing_dataset, node)
+        print(f"\n[ACCURACY]:", end=" ")
+        print(f"{accuracy:.{5}f}")
+        print("[CONFUSION_MATRIX]:")
+        for i in matrix.keys():
+            for j in matrix.keys():
+                print(matrix[j][i], end=" ")
+            print()
