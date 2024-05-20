@@ -1,5 +1,6 @@
 import math
 import copy
+import sys
 
 examples = list()
 x = list()
@@ -8,6 +9,8 @@ y = None
 
 def read_csv(file):
     global x, y
+    global examples
+    examples = list()
     with open(file, "r") as data:
             for line in data:
                 line = line.strip().split(",")
@@ -32,7 +35,6 @@ def define_values():
             
             
 def print_subtree(data, prefix="", counter=1):
-  #label = data[0]
   for i in range(1, len(data), 2):
     subtree = data[i]
     if isinstance(subtree, list):
@@ -150,20 +152,38 @@ class ID3_Algorithm:
         values_r = copy.deepcopy(values) 
         subtrees = self.search(examples, examples, features, values_r)
         return subtrees
+    
+    def find_prediction(self, node, example):
+        current_label = node[0]
+        try:
+            current_index = x.index(current_label)
+        except:
+            print(f"{node}", end=" ")
+            return
+        current_subtree = node[1]
+        if isinstance(current_subtree, list):
+            for i in range (0, len(current_subtree), 2):
+                if current_subtree[i] == example[current_index]:
+                    self.find_prediction(current_subtree[i+1], example)
+        else:
+            print(f"{current_subtree}")
                 
-    def predict(self, testing_set):
+    def predict(self, testing_set, node):
         read_csv(testing_set)
-        result = None 
+        global examples
+        for example in examples[1::]:
+            self.find_prediction(node, example)
+        
         
             
 if __name__ == "__main__":
         ID3 = ID3_Algorithm()
-        #training_dataset = sys.argv[1]
-        #testing_dataset = sys.argv[2]
-        training_dataset = "volleyball.csv"
-        #testing_dataset = "test.csv"
+        training_dataset = sys.argv[1]
+        testing_dataset = sys.argv[2]
+        #training_dataset = "heldout_logic_f2_train.csv"
+        #testing_dataset = "heldout_logic_f2_test.csv"
         print("[BRANCHES]:")
         node = ID3.fit(training_dataset)
         print_subtree(node)
         print("[PREDICTIONS]:", end=" ")
-        #ID3.predict(testing_dataset)
+        ID3.predict(testing_dataset, node)
