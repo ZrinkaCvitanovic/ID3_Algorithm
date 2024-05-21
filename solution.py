@@ -128,7 +128,7 @@ class ID3_Algorithm:
                 most_frequent = value
         return values_y, most_frequent
     
-    def search(self, D, Dp, features, values_r):
+    def search(self, D, Dp, features, values_r, level):
         subtrees = list()
         if len(D) == 0:
             _, v = self.most_common_y(Dp)
@@ -138,6 +138,8 @@ class ID3_Algorithm:
             return v
         current_entropy = self.find_entropy(values_y.values())
         if current_entropy == 0:
+            return v
+        if self.limit is not None and self.limit == level:
             return v
         next_node = self.find_greatest_ig(D, values_r)
         copy_features = copy.deepcopy(features)
@@ -151,7 +153,7 @@ class ID3_Algorithm:
             for el in D:
                 if el[index] == value:
                     D_child.append(el)
-            t = self.search(D_child, D, copy_features, values_r_copy)
+            t = self.search(D_child, D, copy_features, values_r_copy, level+1)
             subtrees.append(value)
             subtrees.append(t)
         return [next_node, subtrees]
@@ -162,14 +164,19 @@ class ID3_Algorithm:
         define_values()
         features = copy.deepcopy(x)
         values_r = copy.deepcopy(values) 
-        subtrees = self.search(examples, examples, features, values_r)
+        subtrees = self.search(examples, examples, features, values_r, 0)
         return subtrees
     
-    def find_prediction(self, node, example):
+    def find_prediction(self, node, example, level):
         current_label = node[0]
         try:
             current_index = x.index(current_label)
         except:
+            print(f"{node}", end=" ")
+            predictions.append(node)
+            return
+        if self.limit is not None and level == self.limit:
+            _, node = self.most_common_y(examples)
             print(f"{node}", end=" ")
             predictions.append(node)
             return
@@ -182,7 +189,7 @@ class ID3_Algorithm:
                     predictions.append(node)
                     return
                 if current_subtree[i] == example[current_index]:
-                    self.find_prediction(current_subtree[i+1], example)
+                    self.find_prediction(current_subtree[i+1], example, level+1)
         else:
             print(f"{current_subtree}")
         return
@@ -202,7 +209,7 @@ class ID3_Algorithm:
         accurate = 0.0
         total = float(len(examples_test))-1
         for example in examples_test[1::]:
-            self.find_prediction(node, example)
+            self.find_prediction(node, example, 0)
         for index in range (len(predictions)):
             if predictions[index] == examples_test[index+1][-1]:
                 accurate += 1
@@ -213,11 +220,13 @@ class ID3_Algorithm:
         
                    
 if __name__ == "__main__":
-        ID3 = ID3_Algorithm()
         training_dataset = sys.argv[1]
         testing_dataset = sys.argv[2]
-        #training_dataset = "volleyball.csv"
-        #testing_dataset = "volleyball_test.csv"
+        try:
+            limit = int(sys.argv[3])
+        except:
+            limit = None           
+        ID3 = ID3_Algorithm(limit)
         print("[BRANCHES]:")
         node = ID3.fit(training_dataset)
         print_subtree(node)
