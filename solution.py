@@ -119,7 +119,10 @@ class ID3_Algorithm:
         
         maximum = 0
         most_frequent = None
-        for value, count in values_y.items():
+        y_keys = list(values_y.keys())
+        y_keys.sort()
+        sorted_dict = {i: values_y[i] for i in y_keys}
+        for value, count in sorted_dict.items():
             if count > maximum:
                 maximum = count
                 most_frequent = value
@@ -173,6 +176,11 @@ class ID3_Algorithm:
         current_subtree = node[1]
         if isinstance(current_subtree, list):
             for i in range (0, len(current_subtree), 2):
+                if example[current_index] not in values[current_label]:
+                    _, node = self.most_common_y(examples)
+                    print(f"{node}", end=" ")
+                    predictions.append(node)
+                    return
                 if current_subtree[i] == example[current_index]:
                     self.find_prediction(current_subtree[i+1], example)
         else:
@@ -208,8 +216,8 @@ if __name__ == "__main__":
         ID3 = ID3_Algorithm()
         training_dataset = sys.argv[1]
         testing_dataset = sys.argv[2]
-        #training_dataset = "heldout_unforseen_value_train.csv"
-        #testing_dataset = "heldout_unseen_test.csv"
+        #training_dataset = "volleyball.csv"
+        #testing_dataset = "volleyball_test.csv"
         print("[BRANCHES]:")
         node = ID3.fit(training_dataset)
         print_subtree(node)
